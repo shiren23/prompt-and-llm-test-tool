@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主观题批改实验平台</title>
+<style>
+:root {
+  --primary: #4a6cf7; --primary-light: #eef2ff; --success: #10b981; --success-light: #ecfdf5;
+  --danger: #ef4444; --danger-light: #fef2f2; --warning: #f59e0b; --warning-light: #fffbeb;
+  --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0; --gray-300: #cbd5e1;
+  --gray-500: #64748b; --gray-700: #334155; --gray-900: #0f172a;
+  --radius: 8px; --shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.5; }
+#app { max-width: 1440px; margin: 0 auto; min-height: 100vh; }
+header { background: linear-gradient(135deg, #4a6cf7, #6366f1); color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+header h1 { font-size: 20px; font-weight: 600; }
+header span { font-size: 13px; opacity: .8; }
+.server-status { margin-left: auto; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.server-status .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.server-status .dot.on { background: #34d399; }
+.server-status .dot.off { background: #f87171; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+nav { background: #fff; border-bottom: 1px solid var(--gray-200); display: flex; padding: 0 24px; overflow-x: auto; }
+nav button { padding: 12px 20px; border: none; background: none; cursor: pointer; font-size: 14px; color: var(--gray-500); border-bottom: 2px solid transparent; transition: all .15s; white-space: nowrap; }
+nav button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+nav button:hover { color: var(--primary); }
+main { padding: 20px 24px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all .15s; font-weight: 500; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #3b5de7; }
+.btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #059669; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-outline { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-300); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+input[type="text"], input[type="number"], input[type="password"], select, textarea {
+  padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 13px;
+  font-family: inherit; outline: none; transition: border-color .15s; width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+textarea { resize: vertical; min-height: 100px; }
+label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: var(--gray-700); }
+.form-row { display: flex; gap: 12px; margin-bottom: 12px; }
+.form-row > div { flex: 1; }
+.form-group { margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--gray-200); }
+th { background: var(--gray-50); font-weight: 600; font-size: 12px; color: var(--gray-700); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+.table-wrap { overflow: auto; max-height: 520px; border: 1px solid var(--gray-200); border-radius: var(--radius); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.badge-success { background: var(--success-light); color: var(--success); }
+.badge-danger { background: var(--danger-light); color: var(--danger); }
+.badge-warning { background: var(--warning-light); color: #b45309; }
+.badge-primary { background: var(--primary-light); color: var(--primary); }
+.badge-gray { background: var(--gray-100); color: var(--gray-500); }
+.stats-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.stat-item { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 18px; display: flex; flex-direction: column; }
+.stat-item .label { font-size: 12px; color: var(--gray-500); }
+.stat-item .value { font-size: 20px; font-weight: 700; color: var(--gray-900); }
+.progress-bar { background: var(--gray-200); border-radius: 10px; height: 20px; overflow: hidden; position: relative; }
+.progress-bar .fill { height: 100%; background: var(--primary); border-radius: 10px; transition: width .3s; }
+.progress-bar .text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--gray-700); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.model-card, .prompt-card { border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+.model-card h4, .prompt-card h4 { font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.model-card p, .prompt-card p { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; word-break: break-all; }
+.matrix-table th.diag { background: var(--gray-100); }
+.matrix-table td { text-align: center; vertical-align: middle; }
+.matrix-table td.correct { background: var(--success-light); color: var(--success); font-weight: 600; }
+.matrix-table td.wrong { background: var(--danger-light); color: var(--danger); font-weight: 600; cursor: pointer; }
+.matrix-table td.pending { background: var(--gray-100); color: var(--gray-500); }
+td.truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag { display: inline-block; background: var(--danger-light); color: var(--danger); padding: 1px 6px; border-radius: 4px; font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.2); max-width: 700px; width: 90%; max-height: 85vh; overflow-y: auto; }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { font-size: 16px; }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray-500); padding: 4px 8px; }
+.modal-body { padding: 20px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; gap: 8px; }
+/* Toast */
+#toast-container { position: fixed; top: 16px; right: 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+.toast { padding: 10px 16px; border-radius: 8px; font-size: 13px; color: #fff; animation: slideIn .2s; max-width: 360px; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+.toast-success { background: var(--success); }
+.toast-error { background: var(--danger); }
+.toast-info { background: var(--primary); }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.log-entry { padding: 8px 12px; border-bottom: 1px solid var(--gray-100); font-size: 12px; font-family: 'SF Mono', Menlo, monospace; }
+.log-entry .time { color: var(--gray-500); margin-right: 8px; }
+.log-entry.info .msg { color: var(--gray-700); }
+.log-entry.error .msg { color: var(--danger); }
+.log-entry.warn .msg { color: #b45309; }
+.log-entry.success .msg { color: var(--success); }
+.filter-bar { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+.filter-bar select { width: auto; min-width: 120px; }
+.empty-state { text-align: center; padding: 40px; color: var(--gray-500); }
+.empty-state p { margin-bottom: 12px; }
+.accuracy-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.accuracy-bar .bar { flex: 1; height: 24px; background: var(--gray-200); border-radius: 4px; overflow: hidden; position: relative; }
+.accuracy-bar .bar .fill { height: 100%; border-radius: 4px; transition: width .3s; }
+.accuracy-bar .pct { font-weight: 600; font-size: 14px; min-width: 50px; text-align: right; }
+.accuracy-bar .lbl { font-size: 13px; min-width: 120px; }
+.section-title { font-size: 14px; font-weight: 600; margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--gray-200); }
+.detail-view { font-size: 12px; }
+.detail-view dt { font-weight: 600; color: var(--gray-700); margin-top: 8px; }
+.detail-view dd { color: var(--gray-500); margin-left: 0; white-space: pre-wrap; word-break: break-word; background: var(--gray-50); padding: 8px; border-radius: 4px; margin-top: 4px; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>主观题批改实验平台</h1>
+    <span>模型 &times; Prompt 横评测试工具</span>
+    <div class="server-status" id="server-status"><span class="dot off"></span><span>代理服务未连接</span></div>
+  </header>
+  <nav id="nav">
+    <button class="active" onclick="switchTab('data')">数据管理</button>
+    <button onclick="switchTab('config')">实验配置</button>
+    <button onclick="switchTab('experiment')">运行实验</button>
+    <button onclick="switchTab('results')">结果分析</button>
+    <button onclick="switchTab('logs')">日志系统</button>
+  </nav>
+  <main>
+    <!-- ===== 数据管理 ===== -->
+    <section id="tab-data" class="tab-panel active">
+      <div class="card">
+        <div class="card-title">加载测试数据</div>
+        <div class="btn-group">
+          <label class="btn btn-primary" style="cursor:pointer;">
+            上传题目数据CSV
+            <input type="file" accept=".csv" onchange="handleCSVUpload(event)" style="display:none">
+          </label>
+          <button class="btn btn-outline" onclick="loadSampleData()">使用示例数据</button>
+        </div>
+        <p style="margin-top:8px;font-size:12px;color:var(--gray-500);">上传「模型&prompt横评测试集 - 数学.csv」主表文件</p>
+      </div>
+      <div id="data-stats" class="stats-bar" style="display:none;"></div>
+      <div id="data-filter" class="card" style="display:none;">
+        <div class="filter-bar">
+          <label style="margin:0;">试卷:</label>
+          <select id="filter-paper" onchange="renderDataTable()"><option value="">全部</option></select>
+          <label style="margin:0;">题型:</label>
+          <select id="filter-type" onchange="renderDataTable()"><option value="">全部</option></select>
+          <label style="margin:0;">正误:</label>
+          <select id="filter-right" onchange="renderDataTable()">
+            <option value="">全部</option><option value="TRUE">正确</option><option value="FALSE">错误</option>
+          </select>
+          <span id="data-count" style="font-size:12px;color:var(--gray-500);"></span>
+        </div>
+      </div>
+      <div id="data-table-wrap" class="table-wrap" style="display:none;">
+        <table id="data-table">
+          <thead><tr>
+            <th>#</th><th>试卷</th><th>题号</th><th>题型</th><th>题目</th>
+            <th>用户答案</th><th>正确答案</th><th>是否正确</th>
+          </tr></thead>
+          <tbody id="data-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== 实验配置 ===== -->
+    <section id="tab-config" class="tab-panel">
+      <div class="grid-2">
+        <div>
+          <div class="card">
+            <div class="card-title">模型配置 <button class="btn btn-sm btn-primary" onclick="showModelModal()">+ 添加模型</button></div>
+            <div id="models-list"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">Prompt配置
+              <button class="btn btn-sm btn-primary" onclick="showPromptModal()">+ 添加</button>
+              <label class="btn btn-sm btn-outline" style="cursor:pointer;">
+                上传文件
+                <input type="file" accept=".txt,.md,.prompt" multiple onchange="handlePromptUpload(event)" style="display:none">
+              </label>
+            </div>
+            <div id="prompts-list"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">题型 &rarr; Prompt类型映射</div>
+        <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">决定每种题型使用哪类prompt进行评测。judge: 判题prompt; subjective: 分步批改prompt</p>
+        <div id="type-mapping" class="form-row"></div>
+        <button class="btn btn-sm btn-primary" onclick="saveTypeMapping()" style="margin-top:8px;">保存映射</button>
+      </div>
+    </section>
+
+    <!-- ===== 运行实验 ===== -->
+    <section id="tab-experiment" class="tab-panel">
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>选择实验组合</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm btn-primary" onclick="toggleComboAll(true)">全选</button>
+            <button class="btn btn-sm" onclick="toggleComboAll(false)">全不选</button>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">勾选需要测试的 模型&times;Prompt 组合，系统会根据题型映射自动匹配</p>
+        <div class="table-wrap" style="max-height:none;">
+          <table class="matrix-table" id="combo-matrix">
+            <thead id="combo-thead"></thead>
+            <tbody id="combo-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">运行设置</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>最大并发数</label>
+            <input type="number" id="run-concurrency" value="4" min="1" max="20">
+          </div>
+          <div class="form-group">
+            <label>请求延迟 (ms)</label>
+            <input type="number" id="run-delay" value="500" min="0" step="100">
+          </div>
+          <div class="form-group">
+            <label>单次超时 (ms)</label>
+            <input type="number" id="run-timeout" value="60000" min="5000" step="5000">
+          </div>
+          <div class="form-group">
+            <label>失败重试次数</label>
+            <input type="number" id="run-retry" value="1" min="0" max="5">
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-success" id="btn-run" onclick="startExperiment()">开始运行</button>
+          <button class="btn btn-danger" id="btn-stop" onclick="stopExperiment()" disabled>停止</button>
+        </div>
+      </div>
+      <div class="card" id="progress-card" style="display:none;">
+        <div class="card-title">运行进度</div>
+        <div class="progress-bar"><div class="fill" id="progress-fill" style="width:0"></div><div class="text" id="progress-text">0%</div></div>
+        <p id="progress-detail" style="margin-top:8px;font-size:12px;color:var(--gray-500);"></p>
+      </div>
+    </section>
+
+    <!-- ===== 结果分析 ===== -->
+    <section id="tab-results" class="tab-panel">
+      <div class="btn-group" style="margin-bottom:16px;">
+        <button class="btn btn-primary" onclick="exportResultsCSV()">导出结果CSV</button>
+        <button class="btn btn-outline" onclick="exportResultsJSON()">导出JSON</button>
+        <button class="btn btn-outline" onclick="exportSummaryCSV()">导出总结表CSV</button>
+        <button class="btn btn-danger" onclick="clearResults()">清除所有结果</button>
+      </div>
+      <div id="results-stats" class="stats-bar"></div>
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>详细结果表</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:13px;color:var(--gray-500);">Prompt筛选：</label>
+            <select id="results-prompt-filter" onchange="renderResultsTable()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+              <option value="__all__">全部</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="matrix-table" id="results-table">
+            <thead id="results-thead"></thead>
+            <tbody id="results-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">按模型统计</div>
+          <div id="stats-by-model"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">按Prompt统计</div>
+          <div id="stats-by-prompt"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">按题型统计</div>
+        <div id="stats-by-type"></div>
+      </div>
+    </section>
+
+    <!-- ===== 日志系统 ===== -->
+    <section id="tab-logs" class="tab-panel">
+      <div class="btn-group" style="margin-bottom:12px;">
+        <button class="btn btn-outline" onclick="exportLogs()">导出日志</button>
+        <button class="btn btn-danger btn-sm" onclick="clearLogs()">清除日志</button>
+      </div>
+      <div class="filter-bar">
+        <select id="log-filter-level" onchange="renderLogs()">
+          <option value="">全部级别</option><option value="info">Info</option>
+          <option value="success">Success</option><option value="warn">Warning</option><option value="error">Error</option>
+        </select>
+        <input type="text" id="log-search" placeholder="搜索日志..." oninput="renderLogs()" style="width:240px;">
+      </div>
+      <div class="table-wrap" style="max-height:600px;">
+        <div id="logs-container"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)hideModal()">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-title"></h3><button class="modal-close" onclick="hideModal()">&times;</button></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+<div id="toast-container"></div>
+
+<script>
+// ===== Constants =====
+const STORAGE_KEY = 'grading_exp_tool';
+const TYPE_MAP_DEFAULT = { '选择题':'judge','填空题':'judge','解答题':'subjective','计算题':'subjective','综合题':'subjective' };
+const PROMPT_TYPE_LABELS = { judge:'判题(judge)', subjective:'分步批改(subjective)' };
+const PROVIDER_PRESETS = {
+  qwen:     { label: '通义千问 (DashScope)', url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions' },
+  deepseek: { label: 'DeepSeek',             url: 'https://api.deepseek.com/v1/chat/completions' },
+  doubao:   { label: '豆包 (火山引擎)',        url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions' },
+  openai:   { label: 'OpenAI',               url: 'https://api.openai.com/v1/chat/completions' },
+};
+const MODEL_TEMPLATES = [
+  { name: 'Qwen3.6-Plus',  provider: 'qwen',     modelId: 'qwen3.6-plus',  desc: '千问3.6旗舰，Agentic Coding强' },
+  { name: 'Qwen3.5-Plus',  provider: 'qwen',     modelId: 'qwen3.5-plus',  desc: '千问3.5，速度快成本低' },
+  { name: 'DeepSeek-V4-Pro',   provider: 'deepseek', modelId: 'deepseek-v4-pro',   desc: 'DeepSeek V4 Pro，编程数学强' },
+  { name: 'DeepSeek-V4-Flash', provider: 'deepseek', modelId: 'deepseek-v4-flash', desc: 'DeepSeek V4 Flash，高速低成本' },
+  { name: 'Doubao-2.0-Pro',  provider: 'doubao', modelId: 'doubao-2.0-pro',  desc: '豆包2.0 Pro（需填接入点ID）' },
+  { name: 'Doubao-2.0-Lite', provider: 'doubao', modelId: 'doubao-2.0-lite', desc: '豆包2.0 Lite（需填接入点ID）' },
+];
+
+// ===== State =====
+let state = {
+  questions: [],
+  models: [],
+  prompts: [],
+  results: [],
+  logs: [],
+  typeMap: { ...TYPE_MAP_DEFAULT },
+  running: false
+};
+
+// ===== Persistence =====
+async function saveConfig() {
+  try {
+    const payload = { models: state.models, prompts: state.prompts, typeMap: state.typeMap };
+    await fetch('/api/save-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  } catch(e) { /* fallback to localStorage */ try { localStorage.setItem(STORAGE_KEY+'_cfg', JSON.stringify({models:state.models,prompts:state.prompts,typeMap:state.typeMap})); } catch(e2){} }
+}
+async function saveResults() {
+  try {
+    await fetch('/api/save-results', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(state.results) });
+  } catch(e) {}
+}
+function saveState() { saveConfig(); saveResults(); }
+
+async function loadSavedState() {
+  let configLoaded = false;
+  let resultsLoaded = false;
+  // Try server file first
+  try {
+    const [cfgResp, resResp] = await Promise.all([
+      fetch('/api/load-config').then(r => r.json()),
+      fetch('/api/load-results').then(r => r.json())
+    ]);
+    if (cfgResp.exists && cfgResp.data) {
+      state.models = (cfgResp.data.models || []).map(m => {
+        if (!m.apiKeys && m.apiKey) m.apiKeys = [m.apiKey];
+        if (!m.apiKeys) m.apiKeys = [];
+        return m;
+      });
+      state.prompts = cfgResp.data.prompts || [];
+      state.typeMap = cfgResp.data.typeMap || { ...TYPE_MAP_DEFAULT };
+      configLoaded = true;
+    }
+    if (resResp.exists && resResp.data) {
+      state.results = Array.isArray(resResp.data) ? resResp.data : [];
+      resultsLoaded = true;
+    }
+  } catch(e) {
+    // Server not available, try localStorage fallback
+  }
+  // Fallback to localStorage if server failed
+  if (!configLoaded) {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY + '_cfg'));
+      if (s) { state.models = (s.models || []).map(m => { if (!m.apiKeys && m.apiKey) m.apiKeys = [m.apiKey]; if (!m.apiKeys) m.apiKeys = []; return m; }); state.prompts = s.prompts || []; state.typeMap = s.typeMap || { ...TYPE_MAP_DEFAULT }; }
+    } catch(e){}
+  }
+  if (!resultsLoaded) {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY + '_res'));
+      if (s) state.results = s;
+    } catch(e){}
+  }
+}
+
+// ===== Utils =====
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function now() { return new Date().toLocaleString('zh-CN', { hour12: false }); }
+
+// ===== Prompt Builder =====
+// Resolve various placeholder formats ({{XXX}}, {xxx}) and append data when no placeholders exist
+function buildPromptContent(rawPrompt, question) {
+  const q = question;
+  const vals = {
+    question: q.question || '', user_answer: q.user_answer || '',
+    user_final_answer: q.user_final_answer || '', right_answer: q.right_answer || '',
+    final_right_answer: q.final_right_answer || '', question_type: q.question_type || '',
+    subject: '数学'
+  };
+  // Placeholder name (lowercase) → data key
+  const keyMap = {
+    'question_content': 'question', 'question': 'question',
+    'student_answer': 'user_answer', 'user_answer': 'user_answer', 'user_final_answer': 'user_final_answer',
+    'standard_answer': 'final_right_answer', 'right_answer': 'final_right_answer',
+    'final_right_answer': 'final_right_answer', 'reference': 'final_right_answer',
+    'question_type': 'question_type', 'subject': 'subject'
+  };
+  // Extract prompt text if wrapped in JSON (e.g. {"prompt_template": "...", ...})
+  let prompt = rawPrompt;
+  try {
+    const parsed = JSON.parse(rawPrompt);
+    if (parsed.prompt_template) prompt = parsed.prompt_template;
+  } catch(e) {}
+
+  let result = prompt, hasPlaceholder = false;
+  // Replace {{KEY}} and {key} for known placeholder names
+  result = result.replace(/\{\{?([A-Za-z_]+)\}?\}/g, (match, name) => {
+    const key = name.toLowerCase();
+    if (keyMap[key] !== undefined) { hasPlaceholder = true; return vals[keyMap[key]]; }
+    return match; // Keep LaTeX / chemical formulas / JSON braces as-is
+  });
+  // If prompt has no known placeholders, append question data at the end
+  if (!hasPlaceholder) {
+    result += `\n\n【题目】：${vals.question}\n【标准答案】：${vals.final_right_answer}\n【学生答案】：${vals.user_answer}`;
+  }
+  return result;
+}
+
+// ===== CSV Parser =====
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let cur = '', inQ = false, row = [];
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i+1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    } else if (c === '"') { inQ = true; }
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\r' || c === '\n') {
+      row.push(cur); cur = '';
+      if (row.some(x => x.trim())) rows.push(row);
+      row = [];
+      if (c === '\r' && text[i+1] === '\n') i++;
+    } else cur += c;
+  }
+  if (cur || row.length) { row.push(cur); if (row.some(x => x.trim())) rows.push(row); }
+  return rows;
+}
+function csvToObjects(rows) {
+  if (rows.length < 2) return [];
+  const headers = rows[0];
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i] || '');
+    return obj;
+  });
+}
+
+// ===== JSON Extractor =====
+function extractJSON(text) {
+  if (!text) return null;
+  try { return JSON.parse(text); } catch(e) {}
+  const m1 = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (m1) try { return JSON.parse(m1[1].trim()); } catch(e) {}
+  const m2 = text.match(/(\{[\s\S]*\})/);
+  if (m2) try { return JSON.parse(m2[1]); } catch(e) {}
+  return null;
+}
+
+// ===== Toast =====
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ===== Modal =====
+function showModal(title, bodyHtml) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function hideModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+
+// ===== Tab =====
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const tabs = ['data','config','experiment','results','logs'];
+  const idx = tabs.indexOf(name);
+  document.querySelectorAll('nav button')[idx].classList.add('active');
+  if (name === 'config') renderConfig();
+  if (name === 'experiment') renderExperiment();
+  if (name === 'results') renderResults();
+  if (name === 'logs') renderLogs();
+}
+
+// ===== Logging =====
+function addLog(level, category, message, data=null) {
+  state.logs.unshift({ id: uid(), time: now(), level, category, message, data });
+  if (state.logs.length > 2000) state.logs.length = 2000;
+}
+function renderLogs() {
+  const container = document.getElementById('logs-container');
+  const level = document.getElementById('log-filter-level').value;
+  const search = document.getElementById('log-search').value.toLowerCase();
+  const filtered = state.logs.filter(l => {
+    if (level && l.level !== level) return false;
+    if (search && !l.message.toLowerCase().includes(search) && !(l.data && JSON.stringify(l.data).toLowerCase().includes(search))) return false;
+    return true;
+  });
+  container.innerHTML = filtered.slice(0, 500).map(l =>
+    `<div class="log-entry ${l.level}"><span class="time">${l.time}</span><span class="badge badge-${l.level==='success'?'success':l.level==='error'?'danger':l.level==='warn'?'warning':'primary'}" style="font-size:10px;">${l.level}</span> <span class="msg">[${l.category}] ${esc(l.message)}</span></div>`
+  ).join('') || '<div class="empty-state"><p>暂无日志</p></div>';
+}
+function clearLogs() { state.logs = []; renderLogs(); toast('日志已清除', 'info'); }
+function exportLogs() {
+  const blob = new Blob([JSON.stringify(state.logs, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, `experiment_logs_${Date.now()}.json`);
+}
+
+// ===== Data Management =====
+function handleCSVUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const rows = parseCSV(ev.target.result);
+    const objs = csvToObjects(rows);
+    state.questions = objs.filter(q => q.question_type && q.paper_id);
+    addLog('info', '数据', `加载CSV: ${state.questions.length}条有效题目 (共${objs.length}行)`);
+    renderDataPanel();
+    saveState();
+    toast(`成功加载 ${state.questions.length} 条题目`, 'success');
+  };
+  reader.readAsText(file, 'utf-8');
+}
+function loadSampleData() {
+  toast('请上传CSV文件加载测试数据', 'info');
+}
+function renderDataPanel() {
+  const qs = state.questions;
+  if (!qs.length) return;
+  // Stats
+  const types = {}, papers = {};
+  qs.forEach(q => { types[q.question_type] = (types[q.question_type]||0)+1; papers[q.paper_id] = (papers[q.paper_id]||0)+1; });
+  let statsHtml = `<div class="stat-item"><div class="label">总题数</div><div class="value">${qs.length}</div></div>`;
+  Object.entries(types).forEach(([k,v]) => { statsHtml += `<div class="stat-item"><div class="label">${k}</div><div class="value">${v}</div></div>`; });
+  statsHtml += `<div class="stat-item"><div class="label">试卷数</div><div class="value">${Object.keys(papers).length}</div></div>`;
+  document.getElementById('data-stats').innerHTML = statsHtml;
+  document.getElementById('data-stats').style.display = 'flex';
+  document.getElementById('data-filter').style.display = 'block';
+  document.getElementById('data-table-wrap').style.display = 'block';
+  // Filters
+  const paperSel = document.getElementById('filter-paper');
+  paperSel.innerHTML = '<option value="">全部</option>' + Object.keys(papers).map(p => `<option value="${p}">试卷 ${p}</option>`).join('');
+  const typeSel = document.getElementById('filter-type');
+  typeSel.innerHTML = '<option value="">全部</option>' + Object.keys(types).map(t => `<option value="${t}">${t}</option>`).join('');
+  renderDataTable();
+}
+function renderDataTable() {
+  const paper = document.getElementById('filter-paper').value;
+  const type = document.getElementById('filter-type').value;
+  const right = document.getElementById('filter-right').value;
+  const filtered = state.questions.filter(q => {
+    if (paper && q.paper_id !== paper) return false;
+    if (type && q.question_type !== type) return false;
+    if (right && q.is_right !== right) return false;
+    return true;
+  });
+  document.getElementById('data-count').textContent = `显示 ${filtered.length} / ${state.questions.length} 条`;
+  const tbody = document.getElementById('data-tbody');
+  tbody.innerHTML = filtered.map((q, i) => `<tr>
+    <td>${i+1}</td><td>${esc(q.paper_id)}</td><td>${esc(q.question_id)}</td>
+    <td><span class="badge badge-primary">${esc(q.question_type)}</span></td>
+    <td class="truncate" title="${esc(q.question)}">${esc(q.question)}</td>
+    <td>${esc(q.user_final_answer)}</td><td>${esc(q.final_right_answer)}</td>
+    <td>${q.is_right==='TRUE'?'<span class="badge badge-success">正确</span>':'<span class="badge badge-danger">错误</span>'}</td>
+  </tr>`).join('');
+}
+
+// ===== Model Config =====
+function renderConfig() {
+  renderModelsList();
+  renderPromptsList();
+  renderTypeMapping();
+}
+function renderModelsList() {
+  const el = document.getElementById('models-list');
+  // Quick-add section
+  let html = '<div style="margin-bottom:14px;padding:12px;background:var(--gray-50);border-radius:var(--radius);"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">快速添加模型模板</div><div class="btn-group" style="flex-wrap:wrap;">';
+  MODEL_TEMPLATES.forEach((t, i) => {
+    const exists = state.models.some(m => m.modelId === t.modelId);
+    html += `<button class="btn btn-sm ${exists?'btn-outline':'btn-primary'}" onclick="addModelFromTemplate(${i})" ${exists?'disabled':''} title="${esc(t.desc)}">${esc(t.name)}${exists?' (已添加)':''}</button>`;
+  });
+  html += '</div></div>';
+  // Existing models
+  if (!state.models.length) {
+    html += '<div class="empty-state"><p>暂无模型，点击上方模板快速添加</p></div>';
+  } else {
+    html += state.models.map(m => {
+      const keyCount = (m.apiKeys || []).length || 1;
+      return `<div class="model-card">
+      <h4>${esc(m.name)} <span class="badge badge-gray">${esc(m.modelId)}</span>
+      ${m.provider ? `<span class="badge badge-primary">${PROVIDER_PRESETS[m.provider]?.label || m.provider}</span>` : ''}
+      <span class="badge badge-gray">${keyCount} Key${keyCount>1?'s':''}</span></h4>
+      <p>API: ${esc(m.apiUrl)}</p>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-outline" onclick="showModelModal('${m.id}')">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteModel('${m.id}')">删除</button>
+      </div>
+    </div>`;
+    }).join('');
+  }
+  el.innerHTML = html;
+}
+function addModelFromTemplate(idx) {
+  const t = MODEL_TEMPLATES[idx];
+  if (state.models.some(m => m.modelId === t.modelId)) { toast(`${t.name} 已存在`, 'error'); return; }
+  const preset = PROVIDER_PRESETS[t.provider];
+  // Show modal with pre-filled data, user needs to enter API key
+  const html = `<form onsubmit="saveModel(event,'')">
+    <p style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">模板已预填服务商和模型ID，只需输入 API Key 即可</p>
+    <div class="form-group"><label>模型名称</label><input type="text" id="m-name" value="${esc(t.name)}" required></div>
+    <div class="form-row">
+      <div class="form-group"><label>服务商</label><select id="m-provider" onchange="onProviderChange()">
+        ${Object.entries(PROVIDER_PRESETS).map(([k,v]) =>
+          `<option value="${k}" ${k===t.provider?'selected':''}>${v.label}</option>`).join('')}
+      </select></div>
+      <div class="form-group"><label>模型ID</label><input type="text" id="m-modelId" value="${esc(t.modelId)}" required></div>
+    </div>
+    <div class="form-group"><label>API地址</label><input type="text" id="m-apiUrl" value="${esc(preset.url)}" required></div>
+    <div class="form-group"><label>API Key 1 <span style="color:var(--danger);">*必填</span></label><input type="password" id="m-apiKey1" placeholder="主Key（必填）" required></div>
+    <div class="form-group"><label>API Key 2 <span style="color:var(--gray-400);">可选，用于轮换分压</span></label><input type="password" id="m-apiKey2" placeholder="备用Key（可选）"></div>
+    <div class="form-group"><label>API Key 3 <span style="color:var(--gray-400);">可选，用于轮换分压</span></label><input type="password" id="m-apiKey3" placeholder="备用Key（可选）"></div>
+    <div class="form-group"><label>超时(ms)</label><input type="number" id="m-timeout" value="60000" min="5000"></div>
+    <div class="btn-group" style="justify-content:flex-end;"><button type="button" class="btn btn-outline" onclick="hideModal()">取消</button>
+    <button type="submit" class="btn btn-primary">添加</button></div>
+  </form>`;
+  showModal(`快速添加: ${t.name}`, html);
+}
+function showModelModal(editId) {
+  const m = editId ? state.models.find(x => x.id === editId) : null;
+  const provOpts = Object.entries(PROVIDER_PRESETS).map(([k,v]) =>
+    `<option value="${k}">${v.label}</option>`).join('');
+  const html = `<form onsubmit="saveModel(event,'${editId||''}')">
+    <div class="form-group"><label>模型名称</label><input type="text" id="m-name" value="${m?esc(m.name):''}" required placeholder="如: Qwen3.6-Plus"></div>
+    <div class="form-row">
+      <div class="form-group"><label>服务商 (自动填充API地址)</label><select id="m-provider" onchange="onProviderChange()">
+        <option value="">-- 自定义 --</option>${provOpts}
+      </select></div>
+      <div class="form-group"><label>模型ID (发送给API的model字段)</label><input type="text" id="m-modelId" value="${m?esc(m.modelId):''}" required placeholder="如: qwen-plus"></div>
+    </div>
+    <div class="form-group"><label>API地址</label><input type="text" id="m-apiUrl" value="${m?esc(m.apiUrl):''}" required placeholder="选择服务商自动填充，或手动输入"></div>
+    <div class="form-group"><label>API Key 1 <span style="color:var(--danger);">*必填</span></label><input type="password" id="m-apiKey1" value="${m?esc((m.apiKeys&&m.apiKeys[0])||m.apiKey||''):''}" placeholder="主Key" required></div>
+    <div class="form-group"><label>API Key 2 <span style="color:var(--gray-400);">可选</span></label><input type="password" id="m-apiKey2" value="${m?esc((m.apiKeys&&m.apiKeys[1])||''):''}" placeholder="备用Key（可选）"></div>
+    <div class="form-group"><label>API Key 3 <span style="color:var(--gray-400);">可选</span></label><input type="password" id="m-apiKey3" value="${m?esc((m.apiKeys&&m.apiKeys[2])||''):''}" placeholder="备用Key（可选）"></div>
+    <div class="form-group"><label>超时(ms)</label><input type="number" id="m-timeout" value="${m?m.timeout:60000}" min="5000"></div>
+    <div class="btn-group" style="justify-content:flex-end;"><button type="button" class="btn btn-outline" onclick="hideModal()">取消</button>
+    <button type="submit" class="btn btn-primary">${m?'保存':'添加'}</button></div>
+  </form>`;
+  showModal(m ? '编辑模型' : '添加模型', html);
+  if (m && m.provider) setTimeout(() => { const s = document.getElementById('m-provider'); if(s) s.value = m.provider; }, 0);
+}
+function onProviderChange() {
+  const sel = document.getElementById('m-provider').value;
+  if (sel && PROVIDER_PRESETS[sel]) {
+    document.getElementById('m-apiUrl').value = PROVIDER_PRESETS[sel].url;
+  }
+}
+function saveModel(e, editId) {
+  e.preventDefault();
+  const apiKeys = [1,2,3].map(i => document.getElementById('m-apiKey'+i).value.trim()).filter(Boolean);
+  const data = {
+    id: editId || uid(),
+    name: document.getElementById('m-name').value.trim(),
+    modelId: document.getElementById('m-modelId').value.trim(),
+    provider: document.getElementById('m-provider').value,
+    apiUrl: document.getElementById('m-apiUrl').value.trim(),
+    apiKeys: apiKeys,
+    apiKey: apiKeys[0] || '',
+    timeout: parseInt(document.getElementById('m-timeout').value) || 60000
+  };
+  if (editId) {
+    const idx = state.models.findIndex(m => m.id === editId);
+    if (idx >= 0) state.models[idx] = data;
+  } else {
+    state.models.push(data);
+  }
+  saveState(); hideModal(); renderModelsList();
+  addLog('info', '配置', `${editId?'更新':'添加'}模型: ${data.name}`);
+  toast(`模型 ${data.name} 已${editId?'更新':'添加'}`, 'success');
+}
+function deleteModel(id) {
+  const m = state.models.find(x => x.id === id);
+  if (m && confirm(`确定删除模型「${m.name}」？`)) {
+    state.models = state.models.filter(x => x.id !== id);
+    state.results = state.results.filter(r => r.modelId !== id);
+    saveState(); renderModelsList();
+    addLog('warn', '配置', `删除模型: ${m.name}`);
+  }
+}
+
+// ===== Prompt Config =====
+function renderPromptsList() {
+  const el = document.getElementById('prompts-list');
+  if (!state.prompts.length) { el.innerHTML = '<div class="empty-state"><p>暂无Prompt，点击添加或上传文件</p></div>'; return; }
+  el.innerHTML = state.prompts.map(p => `<div class="prompt-card">
+    <h4>${esc(p.name)} <span class="badge ${p.type==='judge'?'badge-primary':'badge-warning'}">${PROMPT_TYPE_LABELS[p.type]||p.type}</span></h4>
+    <p style="max-height:60px;overflow:hidden;">${esc(p.content.slice(0, 200))}${p.content.length>200?'...':''}</p>
+    <div class="btn-group">
+      <button class="btn btn-sm btn-outline" onclick="showPromptModal('${p.id}')">编辑</button>
+      <button class="btn btn-sm btn-outline" onclick="previewPrompt('${p.id}')">预览</button>
+      <button class="btn btn-sm btn-danger" onclick="deletePrompt('${p.id}')">删除</button>
+    </div>
+  </div>`).join('');
+}
+function showPromptModal(editId) {
+  const p = editId ? state.prompts.find(x => x.id === editId) : null;
+  const html = `<form onsubmit="savePrompt(event,'${editId||''}')">
+    <div class="form-row">
+      <div class="form-group"><label>Prompt名称</label><input type="text" id="p-name" value="${p?esc(p.name):''}" required placeholder="如: judge-v1"></div>
+      <div class="form-group"><label>类型</label><select id="p-type">
+        <option value="judge" ${p&&p.type==='judge'?'selected':''}>判题 (judge)</option>
+        <option value="subjective" ${p&&p.type==='subjective'?'selected':''}>分步批改 (subjective)</option>
+      </select></div>
+    </div>
+    <div class="form-group"><label>Prompt内容</label>
+      <p style="font-size:11px;color:var(--gray-500);margin-bottom:4px;">可用占位符: {{question}}, {{user_answer}}, {{user_final_answer}}, {{right_answer}}, {{final_right_answer}}, {{question_type}}</p>
+      <textarea id="p-content" rows="12" required>${p?esc(p.content):''}</textarea>
+    </div>
+    <div class="btn-group" style="justify-content:flex-end;"><button type="button" class="btn btn-outline" onclick="hideModal()">取消</button>
+    <button type="submit" class="btn btn-primary">${p?'保存':'添加'}</button></div>
+  </form>`;
+  showModal(p ? '编辑Prompt' : '添加Prompt', html);
+}
+function savePrompt(e, editId) {
+  e.preventDefault();
+  const data = {
+    id: editId || uid(),
+    name: document.getElementById('p-name').value.trim(),
+    type: document.getElementById('p-type').value,
+    content: document.getElementById('p-content').value
+  };
+  if (editId) {
+    const idx = state.prompts.findIndex(p => p.id === editId);
+    if (idx >= 0) state.prompts[idx] = data;
+  } else {
+    state.prompts.push(data);
+  }
+  saveState(); hideModal(); renderPromptsList();
+  addLog('info', '配置', `${editId?'更新':'添加'}Prompt: ${data.name} (${data.type})`);
+  toast(`Prompt ${data.name} 已${editId?'更新':'添加'}`, 'success');
+}
+function deletePrompt(id) {
+  const p = state.prompts.find(x => x.id === id);
+  if (p && confirm(`确定删除Prompt「${p.name}」？`)) {
+    state.prompts = state.prompts.filter(x => x.id !== id);
+    state.results = state.results.filter(r => r.promptId !== id);
+    saveState(); renderPromptsList();
+    addLog('warn', '配置', `删除Prompt: ${p.name}`);
+  }
+}
+function previewPrompt(id) {
+  const p = state.prompts.find(x => x.id === id);
+  if (!p) return;
+  const q = state.questions[0];
+  let preview = p.content;
+  if (q) {
+    preview = preview.replace(/\{\{question\}\}/g, q.question || '').replace(/\{\{user_answer\}\}/g, q.user_answer || '')
+      .replace(/\{\{user_final_answer\}\}/g, q.user_final_answer || '').replace(/\{\{right_answer\}\}/g, q.right_answer || '')
+      .replace(/\{\{final_right_answer\}\}/g, q.final_right_answer || '').replace(/\{\{question_type\}\}/g, q.question_type || '');
+  }
+  showModal(`预览: ${p.name}`, `<div style="font-size:12px;"><p style="margin-bottom:8px;color:var(--gray-500);">${q?'使用第1条题目数据渲染预览':'无题目数据，显示原始内容'}</p><pre style="background:var(--gray-50);padding:12px;border-radius:6px;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow:auto;">${esc(preview)}</pre></div>`);
+}
+function handlePromptUpload(e) {
+  Array.from(e.target.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const name = file.name.replace(/\.(txt|md|prompt)$/i, '');
+      const type = name.toLowerCase().includes('subjective') || name.toLowerCase().includes('subject') ? 'subjective' : 'judge';
+      state.prompts.push({ id: uid(), name, type, content: ev.target.result });
+      saveState(); renderPromptsList();
+      addLog('info', '配置', `上传Prompt文件: ${file.name}`);
+      toast(`已导入 ${file.name}`, 'success');
+    };
+    reader.readAsText(file, 'utf-8');
+  });
+  e.target.value = '';
+}
+
+// ===== Type Mapping =====
+function renderTypeMapping() {
+  const types = [...new Set(state.questions.map(q => q.question_type))];
+  const allTypes = types.length ? types : ['选择题','填空题','解答题','计算题','综合题'];
+  document.getElementById('type-mapping').innerHTML = allTypes.map(t =>
+    `<div class="form-group"><label>${t}</label><select id="tmap-${t}">
+      <option value="judge" ${(state.typeMap[t]||'judge')==='judge'?'selected':''}>judge (判题)</option>
+      <option value="subjective" ${(state.typeMap[t]||'')==='subjective'?'selected':''}>subjective (分步批改)</option>
+    </select></div>`
+  ).join('');
+}
+function saveTypeMapping() {
+  const types = [...new Set(state.questions.map(q => q.question_type))];
+  const allTypes = types.length ? types : ['选择题','填空题','解答题','计算题','综合题'];
+  allTypes.forEach(t => {
+    const sel = document.getElementById('tmap-' + t);
+    if (sel) state.typeMap[t] = sel.value;
+  });
+  saveState();
+  toast('题型映射已保存', 'success');
+  addLog('info', '配置', `更新题型映射: ${JSON.stringify(state.typeMap)}`);
+}
+
+// ===== Experiment =====
+function renderExperiment() {
+  renderComboMatrix();
+}
+function renderComboMatrix() {
+  const thead = document.getElementById('combo-thead');
+  const tbody = document.getElementById('combo-tbody');
+  if (!state.models.length || !state.prompts.length) {
+    thead.innerHTML = ''; tbody.innerHTML = `<tr><td colspan="2" class="empty-state"><p>请先在「实验配置」中添加模型和Prompt</p></td></tr>`;
+    return;
+  }
+  thead.innerHTML = `<tr><th>模型 \\ Prompt</th>${state.prompts.map(p => `<th class="diag">${esc(p.name)}<br><span class="badge ${p.type==='judge'?'badge-primary':'badge-warning'}" style="font-size:10px;">${p.type}</span></th>`).join('')}</tr>`;
+  tbody.innerHTML = state.models.map(m => `<tr><th class="diag">${esc(m.name)}</th>${state.prompts.map(p => {
+    const hasResult = state.results.some(r => r.modelId === m.id && r.promptId === p.id);
+    return `<td><label style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+      <input type="checkbox" class="combo-check" data-model="${m.id}" data-prompt="${p.id}" ${hasResult?'checked':''}>
+      ${hasResult?'<span class="badge badge-gray" style="font-size:10px;">已有数据</span>':''}
+    </label></td>`;
+  }).join('')}</tr>`).join('');
+}
+function toggleComboAll(checked) {
+  document.querySelectorAll('.combo-check').forEach(c => c.checked = checked);
+}
+function getSelectedCombos() {
+  const checks = document.querySelectorAll('.combo-check:checked');
+  return Array.from(checks).map(c => ({ modelId: c.dataset.model, promptId: c.dataset.prompt }));
+}
+
+async function startExperiment() {
+  const combos = getSelectedCombos();
+  if (!combos.length) { toast('请至少选择一个模型×Prompt组合', 'error'); return; }
+  if (!state.questions.length) { toast('请先加载数据', 'error'); return; }
+  state.running = true;
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('btn-stop').disabled = false;
+  document.getElementById('progress-card').style.display = 'block';
+  const delay = parseInt(document.getElementById('run-delay').value) || 500;
+  const timeout = parseInt(document.getElementById('run-timeout').value) || 60000;
+  const maxRetry = Math.max(0, parseInt(document.getElementById('run-retry').value) || 0);
+  const maxConcurrency = Math.max(1, parseInt(document.getElementById('run-concurrency').value) || 4);
+  let total = combos.length * state.questions.length;
+  let done = { count: 0 };
+  addLog('info', '实验', `开始运行: ${combos.length}个组合, 并发${maxConcurrency}, ${state.questions.length}题/组合, 共${total}次调用`);
+
+  // Semaphore: limit concurrent API calls
+  let running = 0;
+  const waitQueue = [];
+  function acquire() {
+    return new Promise(resolve => {
+      if (running < maxConcurrency) { running++; resolve(); }
+      else waitQueue.push(resolve);
+    });
+  }
+  function release() {
+    running--;
+    if (waitQueue.length) { running++; waitQueue.shift()(); }
+  }
+
+  const tasks = combos.flatMap(combo => {
+    const model = state.models.find(m => m.id === combo.modelId);
+    const prompt = state.prompts.find(p => p.id === combo.promptId);
+    if (!model || !prompt) return [];
+
+    const keys = model.apiKeys || (model.apiKey ? [model.apiKey] : []);
+    const keyCount = Math.max(1, keys.length);
+
+    // Split questions evenly across keys
+    const questionGroups = Array.from({ length: keyCount }, () => []);
+    state.questions.forEach((q, qi) => {
+      questionGroups[qi % keyCount].push({ q, qi });
+    });
+
+    return questionGroups.map((group, ki) => (async () => {
+      for (const { q, qi } of group) {
+        if (!state.running) break;
+        const promptType = state.typeMap[q.question_type] || 'judge';
+        if (prompt.type !== promptType) { done.count++; updateProgress(done.count, total, `${model.name} × ${prompt.name} - 跳过`); continue; }
+        let content = buildPromptContent(prompt.content, q);
+        let response = null, attempts = 0;
+        await acquire();
+        try {
+          while (attempts <= maxRetry && !response) {
+            attempts++;
+            try {
+              updateProgress(done.count, total, `调用 ${model.name}(K${ki+1}) × ${prompt.name} - 试卷${q.paper_id}题${q.question_id}`);
+              response = await callModelAPI(model, content, timeout, ki);
+            } catch(err) {
+              addLog('error', 'API', `${model.name}(K${ki+1}) 调用失败(${attempts}/${maxRetry+1}): ${err.message}`);
+              if (attempts > maxRetry) response = null;
+            }
+          }
+        } finally { release(); }
+        const evaluation = evaluateResponse(response, q, prompt.type);
+        const existing = state.results.findIndex(r => r.modelId === combo.modelId && r.promptId === combo.promptId && r.questionIndex === qi);
+        const resultObj = {
+          modelId: combo.modelId, promptId: combo.promptId, questionIndex: qi,
+          paperId: q.paper_id, questionId: q.question_id, questionType: q.question_type,
+          modelResponse: response, evaluation, timestamp: now()
+        };
+        if (existing >= 0) state.results[existing] = resultObj;
+        else state.results.push(resultObj);
+        done.count++;
+        updateProgress(done.count, total, `${model.name}(K${ki+1}) × ${prompt.name} - ${done.count}/${total}`);
+        if (delay > 0) await sleep(delay);
+      }
+    })());
+  });
+
+  await Promise.all(tasks);
+  state.running = false;
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  saveState();
+  addLog('success', '实验', `实验完成: ${done.count}/${total} 次调用`);
+  toast(`实验完成！共处理 ${done.count} 次`, 'success');
+}
+function stopExperiment() {
+  state.running = false;
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  addLog('warn', '实验', '用户手动停止实验');
+  toast('实验已停止', 'info');
+}
+function updateProgress(done, total, detail) {
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${done}/${total} (${pct}%)`;
+  document.getElementById('progress-detail').textContent = detail || '';
+}
+async function callModelAPI(model, content, timeout, keyIndex = 0) {
+  const keys = model.apiKeys || (model.apiKey ? [model.apiKey] : []);
+  const apiKey = keys[keyIndex % keys.length] || '';
+  const proxyUrl = `${window.location.origin}/api/call`;
+  const max429Retries = 5;
+  for (let attempt = 0; attempt <= max429Retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), (timeout || 60000) + 5000);
+    try {
+      const resp = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUrl: model.apiUrl,
+          apiKey: apiKey,
+          body: { model: model.modelId, messages: [{ role: 'user', content }], temperature: 0 },
+          timeout: Math.ceil((timeout || 60000) / 1000)
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      const text = await resp.text();
+      let data;
+      try { data = JSON.parse(text); } catch(e) { throw new Error('Response parse error: ' + text.slice(0, 200)); }
+
+      // Handle 429 rate limit with exponential backoff
+      if (data.status === 429 && attempt < max429Retries) {
+        const retryAfter = data.retryAfter || parseInt(resp.headers.get('X-RateLimit-RetryAfter')) || 0;
+        const wait = retryAfter > 0 ? retryAfter * 1000 : Math.min(2000 * Math.pow(2, attempt), 30000);
+        addLog('warn', 'API', `${model.name}(K${keyIndex+1}) 限流429，等待${(wait/1000).toFixed(1)}s后重试(${attempt+1}/${max429Retries})`);
+        await sleep(wait);
+        continue;
+      }
+
+      if (!resp.ok || data.proxyError) {
+        throw new Error(`HTTP ${data.status || resp.status}: ${(data.body || '').slice(0, 200)}`);
+      }
+      return data.choices?.[0]?.message?.content || data.response || data.result || JSON.stringify(data);
+    } catch(e) {
+      clearTimeout(timer);
+      // Don't retry on non-429 errors
+      throw e;
+    }
+  }
+  throw new Error(`HTTP 429: 限流重试${max429Retries}次后仍失败`);
+}
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ===== Evaluation =====
+function evaluateResponse(responseText, question, promptType) {
+  if (!responseText) return { judgmentCorrect: null, modelResult: null, groundTruth: question.is_right === 'TRUE', tag: 'API调用失败，无响应' };
+  const groundTruth = question.is_right === 'TRUE';
+  const data = extractJSON(responseText);
+  if (!data) return { judgmentCorrect: null, modelResult: null, groundTruth, tag: '模型输出非JSON', rawResponse: responseText.slice(0, 200) };
+
+  let modelJudgment = null, tag = '';
+
+  // --- Format: {"批改结果": "正确/错误/部分正确", "错误标签": [...], "错误步骤": [...]} ---
+  if (data['批改结果'] !== undefined) {
+    const r = data['批改结果'];
+    modelJudgment = r === '正确' ? true : false; // "部分正确" and "错误" both = not fully correct
+    if (Array.isArray(data['错误标签']) && data['错误标签'].length) tag = data['错误标签'].join(', ');
+    if (Array.isArray(data['错误步骤']) && data['错误步骤'].length) tag += (tag ? ' | ' : '') + data['错误步骤'].join('; ').slice(0, 100);
+    if (data['过程评价']) tag = data['过程评价'].slice(0, 120);
+  }
+  // --- Format: {"overall_judgment": "correct/incorrect", "steps": [...]} ---
+  else if (data['overall_judgment'] !== undefined) {
+    const r = data['overall_judgment'];
+    modelJudgment = r === 'correct';
+    if (Array.isArray(data['steps'])) {
+      const errs = data['steps'].filter(s => s.judgment !== 'correct');
+      tag = errs.map(s => (s.errors || []).map(e => e.label || e.location || '').filter(Boolean).join(',') || s.judgment).join('; ').slice(0, 120);
+    }
+  }
+  // --- Format: {"overall_result": "正确/部分正确/错误", "step_analysis": [...]} ---
+  else if (data['overall_result'] !== undefined) {
+    const r = data['overall_result'];
+    modelJudgment = r === '正确' ? true : false;
+    if (Array.isArray(data['step_analysis'])) {
+      const errs = data['step_analysis'].filter(s => s.judge && s.judge !== '正确');
+      tag = errs.map(s => [s.error_tag, s.error_detail].filter(Boolean).join(': ')).join('; ').slice(0, 120);
+    }
+    if (data['teacher_feedback']) tag += (tag ? ' | ' : '') + data['teacher_feedback'].slice(0, 60);
+  }
+  // --- Format: {"overall_verdict": "正确/部分正确/错误", "step_analysis": [...], "final_answer_check": "..."} ---
+  else if (data['overall_verdict'] !== undefined) {
+    const r = data['overall_verdict'];
+    modelJudgment = r === '正确' ? true : false;
+    if (Array.isArray(data['step_analysis'])) {
+      const errs = data['step_analysis'].filter(s => s.verdict && s.verdict !== '正确');
+      tag = errs.map(s => (s.error_tags || []).concat(s.teacher_comment ? [s.teacher_comment] : []).join(', ')).join('; ').slice(0, 120);
+    }
+    if (data['grading_feedback']) tag += (tag ? ' | ' : '') + data['grading_feedback'].slice(0, 60);
+  }
+  // --- Legacy: {"AllCorrect": true/false} ---
+  else if (typeof data.AllCorrect === 'boolean') {
+    modelJudgment = data.AllCorrect;
+    if (data.ErrorType) tag = data.ErrorType;
+    if (data.Correction) tag += (tag ? ' | ' : '') + data.Correction.slice(0, 80);
+  }
+  // --- Legacy: {"ResultIsCorrect": "yes/no"} ---
+  else if (typeof data.ResultIsCorrect === 'string') {
+    modelJudgment = data.ResultIsCorrect === 'yes';
+    if (Array.isArray(data.Questions)) {
+      tag = data.Questions.filter(q => q.Correction).map(q => q.Correction).join('; ').slice(0, 120);
+    }
+  }
+
+  if (modelJudgment === null) {
+    // Dump all keys for debugging
+    const keys = Object.keys(data).join(', ');
+    return { judgmentCorrect: null, modelResult: null, groundTruth, tag: `无法识别输出格式 (字段: ${keys})`, rawData: data };
+  }
+
+  const judgmentCorrect = modelJudgment === groundTruth;
+  if (!judgmentCorrect) {
+    const prefix = groundTruth ? '误判: 将正确答案判为错误(FN)' : '误判: 将错误答案判为正确(FP)';
+    tag = prefix + (tag ? ' | ' + tag : '');
+  }
+  return { judgmentCorrect, modelResult: modelJudgment, groundTruth, tag, rawData: data };
+}
+
+// ===== Results =====
+function renderResults() {
+  renderResultsStats();
+  renderResultsTable();
+  renderAnalysisByModel();
+  renderAnalysisByPrompt();
+  renderAnalysisByType();
+}
+function getResultForCell(modelId, promptId, questionIndex) {
+  return state.results.find(r => r.modelId === modelId && r.promptId === promptId && r.questionIndex === questionIndex);
+}
+function renderResultsStats() {
+  const el = document.getElementById('results-stats');
+  const combos = [...new Set(state.results.map(r => `${r.modelId}_${r.promptId}`))];
+  let html = '';
+  combos.forEach(key => {
+    const [mid, pid] = [state.results.find(r => `${r.modelId}_${r.promptId}` === key)?.modelId, state.results.find(r => `${r.modelId}_${r.promptId}` === key)?.promptId];
+    const model = state.models.find(m => m.id === mid);
+    const prompt = state.prompts.find(p => p.id === pid);
+    if (!model || !prompt) return;
+    const results = state.results.filter(r => r.modelId === mid && r.promptId === pid);
+    const evaluated = results.filter(r => r.evaluation?.judgmentCorrect !== null && r.evaluation?.judgmentCorrect !== undefined);
+    const correct = evaluated.filter(r => r.evaluation.judgmentCorrect === true).length;
+    const pct = evaluated.length ? Math.round(correct / evaluated.length * 100) : 0;
+    const color = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
+    html += `<div class="stat-item"><div class="label">${model.name} × ${prompt.name}</div><div class="value" style="color:${color}">${pct}%</div><div style="font-size:11px;color:var(--gray-500);">${correct}/${evaluated.length} 正确</div></div>`;
+  });
+  el.innerHTML = html || '<div class="empty-state"><p>暂无结果数据</p></div>';
+}
+function renderResultsTable() {
+  const thead = document.getElementById('results-thead');
+  const tbody = document.getElementById('results-tbody');
+  const filterSel = document.getElementById('results-prompt-filter');
+  // Populate prompt filter options
+  const usedPrompts = [...new Set(state.results.map(r => r.promptId))];
+  const prevVal = filterSel.value;
+  filterSel.innerHTML = '<option value="__all__">全部 Prompt</option>' + usedPrompts.map(pid => {
+    const p = state.prompts.find(x => x.id === pid);
+    return `<option value="${pid}">${p?.name || pid}</option>`;
+  }).join('');
+  if (usedPrompts.includes(prevVal) || prevVal === '__all__') filterSel.value = prevVal;
+  const filterPrompt = filterSel.value;
+
+  if (!state.results.length) { thead.innerHTML = ''; tbody.innerHTML = `<tr><td colspan="5" class="empty-state"><p>暂无结果，请先运行实验</p></td></tr>`; return; }
+
+  // Build column groups: one model per column, filtered by selected prompt (or all prompts)
+  let cols; // [{modelId, promptId, label}]
+  if (filterPrompt === '__all__') {
+    const comboKeys = [...new Set(state.results.map(r => `${r.modelId}|${r.promptId}`))];
+    cols = comboKeys.map(k => { const [m, p] = k.split('|'); return { modelId: m, promptId: p }; });
+    cols.forEach(c => { const m = state.models.find(x => x.id === c.modelId); const p = state.prompts.find(x => x.id === c.promptId); c.label = `${m?.name || '?'} × ${p?.name || '?'}`; });
+  } else {
+    const modelIds = [...new Set(state.results.filter(r => r.promptId === filterPrompt).map(r => r.modelId))];
+    cols = modelIds.map(mid => { const m = state.models.find(x => x.id === mid); return { modelId: mid, promptId: filterPrompt, label: m?.name || mid }; });
+  }
+
+  thead.innerHTML = `<tr><th>#</th><th>试卷</th><th>题号</th><th>题型</th><th>GT</th>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr>`;
+  tbody.innerHTML = state.questions.map((q, qi) => {
+    const gtBadge = q.is_right === 'TRUE' ? '<span class="badge badge-success">T</span>' : '<span class="badge badge-danger">F</span>';
+    const cells = cols.map(c => {
+      const r = getResultForCell(c.modelId, c.promptId, qi);
+      if (!r || !r.evaluation) return '<td class="pending">-</td>';
+      const ev = r.evaluation;
+      if (ev.judgmentCorrect === null) return `<td onclick="showResultDetail('${c.modelId}','${c.promptId}',${qi})" style="background:var(--warning-light);color:#b45309;cursor:pointer;" title="${esc(ev.tag || '')}">?</td>`;
+      const cls = ev.judgmentCorrect ? 'correct' : 'wrong';
+      const icon = ev.judgmentCorrect ? '&#10003;' : '&#10007;';
+      const title = ev.tag ? ` title="${esc(ev.tag)}"` : '';
+      return `<td class="${cls}" onclick="showResultDetail('${c.modelId}','${c.promptId}',${qi})" style="cursor:pointer;"${title}>${icon}</td>`;
+    }).join('');
+    return `<tr><td>${qi + 1}</td><td>${esc(q.paper_id)}</td><td>${esc(q.question_id)}</td><td><span class="badge badge-primary">${esc(q.question_type)}</span></td><td>${gtBadge}</td>${cells}</tr>`;
+  }).join('');
+}
+function showResultDetail(modelId, promptId, qi) {
+  const r = getResultForCell(modelId, promptId, qi);
+  if (!r) return;
+  const model = state.models.find(m => m.id === modelId);
+  const prompt = state.prompts.find(p => p.id === promptId);
+  const q = state.questions[qi];
+  let html = `<div class="detail-view">
+    <dt>题目信息</dt><dd>试卷${esc(q.paper_id)} 题${esc(q.question_id)} (${esc(q.question_type)})</dd>
+    <dt>题目内容</dt><dd>${esc(q.question)}</dd>
+    <dt>用户答案 / 正确答案</dt><dd>${esc(q.user_final_answer)} / ${esc(q.final_right_answer)} (GT: ${q.is_right})</dd>
+    <dt>评测结果</dt><dd>判题${r.evaluation?.judgmentCorrect?'正确':'<span style="color:var(--danger)">错误</span>'} | Tag: ${esc(r.evaluation?.tag||'')}</dd>
+    <dt>模型原始响应</dt><dd>${esc(r.modelResponse || '无')}</dd>
+  </div>`;
+  showModal(`${model?.name||'?'} × ${prompt?.name||'?'} - 题${qi+1} 详情`, html);
+}
+function renderAnalysisByModel() {
+  const el = document.getElementById('stats-by-model');
+  if (!state.results.length) { el.innerHTML = '<div class="empty-state"><p>暂无数据</p></div>'; return; }
+  const byModel = {};
+  state.results.forEach(r => {
+    if (!byModel[r.modelId]) byModel[r.modelId] = { correct: 0, wrong: 0, fail: 0 };
+    if (r.evaluation?.judgmentCorrect === true) byModel[r.modelId].correct++;
+    else if (r.evaluation?.judgmentCorrect === false) byModel[r.modelId].wrong++;
+    else byModel[r.modelId].fail++;
+  });
+  el.innerHTML = Object.entries(byModel).map(([mid, s]) => {
+    const m = state.models.find(x => x.id === mid);
+    const total = s.correct + s.wrong + s.fail;
+    const pct = (s.correct + s.wrong) ? Math.round(s.correct / (s.correct + s.wrong) * 100) : 0;
+    const color = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
+    return `<div class="accuracy-bar"><span class="lbl">${m?.name||'?'}</span><div class="bar"><div class="fill" style="width:${pct}%;background:${color};"></div></div><span class="pct" style="color:${color}">${pct}%</span></div>
+    <div style="font-size:11px;color:var(--gray-500);margin-bottom:8px;">正确${s.correct} / 错判${s.wrong} / 解析失败${s.fail} / 共${total}</div>`;
+  }).join('');
+}
+function renderAnalysisByPrompt() {
+  const el = document.getElementById('stats-by-prompt');
+  if (!state.results.length) { el.innerHTML = '<div class="empty-state"><p>暂无数据</p></div>'; return; }
+  const byPrompt = {};
+  state.results.forEach(r => {
+    if (!byPrompt[r.promptId]) byPrompt[r.promptId] = { correct: 0, wrong: 0, fail: 0 };
+    if (r.evaluation?.judgmentCorrect === true) byPrompt[r.promptId].correct++;
+    else if (r.evaluation?.judgmentCorrect === false) byPrompt[r.promptId].wrong++;
+    else byPrompt[r.promptId].fail++;
+  });
+  el.innerHTML = Object.entries(byPrompt).map(([pid, s]) => {
+    const p = state.prompts.find(x => x.id === pid);
+    const pct = (s.correct + s.wrong) ? Math.round(s.correct / (s.correct + s.wrong) * 100) : 0;
+    const color = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
+    return `<div class="accuracy-bar"><span class="lbl">${p?.name||'?'}</span><div class="bar"><div class="fill" style="width:${pct}%;background:${color};"></div></div><span class="pct" style="color:${color}">${pct}%</span></div>
+    <div style="font-size:11px;color:var(--gray-500);margin-bottom:8px;">正确${s.correct} / 错判${s.wrong} / 解析失败${s.fail}</div>`;
+  }).join('');
+}
+function renderAnalysisByType() {
+  const el = document.getElementById('stats-by-type');
+  if (!state.results.length) { el.innerHTML = '<div class="empty-state"><p>暂无数据</p></div>'; return; }
+  const byType = {};
+  state.results.forEach(r => {
+    if (!byType[r.questionType]) byType[r.questionType] = { correct: 0, wrong: 0, fail: 0 };
+    if (r.evaluation?.judgmentCorrect === true) byType[r.questionType].correct++;
+    else if (r.evaluation?.judgmentCorrect === false) byType[r.questionType].wrong++;
+    else byType[r.questionType].fail++;
+  });
+  el.innerHTML = Object.entries(byType).map(([t, s]) => {
+    const pct = (s.correct + s.wrong) ? Math.round(s.correct / (s.correct + s.wrong) * 100) : 0;
+    const color = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
+    return `<div class="accuracy-bar"><span class="lbl">${t||'(未知)'}</span><div class="bar"><div class="fill" style="width:${pct}%;background:${color};"></div></div><span class="pct" style="color:${color}">${pct}%</span></div>
+    <div style="font-size:11px;color:var(--gray-500);margin-bottom:8px;">正确${s.correct} / 错判${s.wrong} / 解析失败${s.fail}</div>`;
+  }).join('');
+}
+
+// ===== Export =====
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function exportResultsCSV() {
+  if (!state.results.length) { toast('暂无结果', 'error'); return; }
+  const comboKeys = [...new Set(state.results.map(r => `${r.modelId}|${r.promptId}`))];
+  const combos = comboKeys.map(k => { const [m,p] = k.split('|'); return { modelId: m, promptId: p }; });
+  // Header
+  let header = ['序号','试卷','题号','题型','GroundTruth'];
+  combos.forEach(c => {
+    const m = state.models.find(x=>x.id===c.modelId); const p = state.prompts.find(x=>x.id===c.promptId);
+    header.push(`${m?.name||'?'}×${p?.name||'?'} 判题`, `${m?.name||'?'}×${p?.name||'?'} Tag`);
+  });
+  let rows = [header.join(',')];
+  state.questions.forEach((q, qi) => {
+    let row = [qi+1, q.paper_id, q.question_id, q.question_type, q.is_right];
+    combos.forEach(c => {
+      const r = getResultForCell(c.modelId, c.promptId, qi);
+      if (r?.evaluation) {
+        row.push(r.evaluation.judgmentCorrect === true ? 'True' : r.evaluation.judgmentCorrect === false ? 'False' : 'ParseError');
+        row.push('"' + (r.evaluation.tag || '').replace(/"/g, '""') + '"');
+      } else { row.push('', ''); }
+    });
+    rows.push(row.join(','));
+  });
+  const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  downloadBlob(blob, `实验结果_${Date.now()}.csv`);
+  toast('CSV已导出', 'success');
+}
+function exportSummaryCSV() {
+  if (!state.results.length) { toast('暂无结果', 'error'); return; }
+  // Format matching 数学总结.csv: paper_id, question_id, question_type, then 判题是否正确 for each model, then tag for each model
+  const modelIds = [...new Set(state.results.map(r => r.modelId))];
+  // Row 1: merged header
+  let row1 = ['','','','判题是否正确',...Array(modelIds.length-1).fill(''),...Array(modelIds.length).fill('输出的tag'),...Array(Math.max(0,12-modelIds.length*2)).fill('')];
+  let row2 = ['paper_id','question_id','question_type',...modelIds.map(id => state.models.find(m=>m.id===id)?.name||'?'),...modelIds.map(id => state.models.find(m=>m.id===id)?.name||'?'),...Array(Math.max(0,12-modelIds.length*2)).fill('')];
+  let csvRows = [row1.join(','), row2.join(',')];
+  state.questions.forEach((q, qi) => {
+    let row = [q.paper_id, q.question_id, q.question_type];
+    // 判题是否正确
+    modelIds.forEach(mid => {
+      // Find any result for this question across all prompts for this model
+      const results = state.results.filter(r => r.modelId === mid && r.questionIndex === qi);
+      const best = results.find(r => r.evaluation?.judgmentCorrect !== null) || results[0];
+      if (best?.evaluation?.judgmentCorrect === true) row.push('True');
+      else if (best?.evaluation?.judgmentCorrect === false) row.push('False');
+      else row.push('');
+    });
+    // tag
+    modelIds.forEach(mid => {
+      const results = state.results.filter(r => r.modelId === mid && r.questionIndex === qi);
+      const best = results.find(r => r.evaluation?.tag) || results[0];
+      row.push('"' + (best?.evaluation?.tag || '').replace(/"/g, '""') + '"');
+    });
+    // pad
+    for (let i = row.length; i < row2.length; i++) row.push('');
+    csvRows.push(row.join(','));
+  });
+  const blob = new Blob(['﻿' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  downloadBlob(blob, `总结表_${Date.now()}.csv`);
+  toast('总结表CSV已导出', 'success');
+}
+function exportResultsJSON() {
+  if (!state.results.length) { toast('暂无结果', 'error'); return; }
+  const exportData = state.results.map(r => {
+    const m = state.models.find(x=>x.id===r.modelId);
+    const p = state.prompts.find(x=>x.id===r.promptId);
+    return { ...r, modelName: m?.name, promptName: p?.name, promptType: p?.type };
+  });
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, `实验结果_${Date.now()}.json`);
+  toast('JSON已导出', 'success');
+}
+function clearResults() {
+  if (confirm('确定清除所有实验结果？此操作不可恢复。')) {
+    state.results = [];
+    saveState(); renderResults();
+    addLog('warn', '结果', '用户清除所有结果');
+    toast('结果已清除', 'info');
+  }
+}
+
+// ===== Init =====
+function init() {
+  loadSavedState().then(() => {
+    renderConfig();
+    addLog('info', '系统', '工具已初始化，配置已从本地文件加载');
+  });
+  checkServerStatus();
+}
+async function checkServerStatus() {
+  const el = document.getElementById('server-status');
+  try {
+    const r = await fetch(`${window.location.origin}/api/status`, { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      el.innerHTML = '<span class="dot on"></span><span>代理服务已连接</span>';
+    } else throw 0;
+  } catch(e) {
+    el.innerHTML = '<span class="dot off"></span><span>代理服务未连接 — 请运行 python3 server.py</span>';
+  }
+}
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

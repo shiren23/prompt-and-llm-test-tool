@@ -1,0 +1,5 @@
+# Runtime data (contains API keys and results)
+data/
+
+# OS files
+.DS_Store
