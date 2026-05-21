@@ -1018,7 +1018,6 @@ async function callModelAPI(model, content, timeout, keyIndex = 0) {
   }
   throw new Error(`HTTP 429: 限流重试${max429Retries}次后仍失败`);
 }
-}
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ===== Evaluation =====
